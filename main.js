@@ -6,26 +6,16 @@ import { UnrealBloomPass } from 'https://cdn.skypack.dev/three@0.136.0/examples/
 import { ShaderPass } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/postprocessing/ShaderPass.js';
 
 /* Future Enhancement Ideas:
- * 1. Add DNA-like strands that form and morph based on audio frequency bands
- * 2. Create neural pathway visualizations that light up with audio peaks
- * 3. Add camera movement sequences/animations for key narrative moments
- * 4. Implement interactive elements where users can influence the digital consciousness
- * 5. Add particle effects that form recognizable shapes/patterns
- * 6. Create abstract data visualization elements representing "memories"
- * 7. Add volumetric light rays that pulse with the music
- * 8. Implement a "digital rain" effect with falling characters
- * 9. Create an energy field that distorts space around the crystal
- * 10. Add floating mathematical equations and digital symbols
- * 11. Create neural pathways between crystal fragments that glow and pulse with audio.
- * 12. Implement user interaction: clicking on the crystal could trigger a visual effect.
- * 13. Add subtle camera movements that follow the rhythm of the music.
- * 14. Develop a more complex particle system that forms temporary shapes or patterns.
- * 15. Introduce depth of field effect to focus on certain elements.
- * 16. Experiment with different color palettes that shift over time or with the music.
- * 17. Add a subtle chromatic aberration effect for a digital/holographic feel.
- * 18. Create a sense of movement or flow in the background starfield.
- * 19. Animate the intensity of the point lights based on audio peaks.
- * 20. Introduce a subtle vignette effect to draw focus to the center of the scene.
+ * 1. Create a central "brain" visualization with interconnected neurons
+ * 2. Add fractal patterns that emerge and evolve with the music
+ * 3. Implement data streams that flow between different elements
+ * 4. Add holographic UI elements that appear at key moments
+ * 5. Create geometric morphing transitions between scenes
+ * 6. Implement audio-reactive environment fog effects
+ * 7. Add floating code fragments that assemble into structures
+ * 8. Create abstract "memory crystal" artifacts that store narrative moments
+ * 9. Implement dynamic camera paths that follow data flows
+ * 10. Add particle-based "thought bubbles" that form and dissolve
  */
 
 class AudioAnalyzer {
@@ -252,6 +242,160 @@ class NeuralPathways {
   }
 }
 
+class DigitalRain {
+  constructor(scene) {
+    this.scene = scene;
+    this.raindrops = new THREE.Group();
+    this.characters = '01'.split('');
+    this.streams = [];
+    
+    const fontSize = 0.3;
+    const streamCount = 50;
+    
+    for (let i = 0; i < streamCount; i++) {
+      const stream = this.createStream(fontSize);
+      this.streams.push(stream);
+      this.raindrops.add(stream);
+    }
+    
+    scene.add(this.raindrops);
+  }
+  
+  createStream(fontSize) {
+    const stream = new THREE.Group();
+    const length = Math.floor(Math.random() * 10) + 5;
+    
+    for (let i = 0; i < length; i++) {
+      const char = this.characters[Math.floor(Math.random() * this.characters.length)];
+      const geometry = new THREE.TextGeometry(char, {
+        size: fontSize,
+        height: 0.01,
+      });
+      
+      const material = new THREE.MeshBasicMaterial({
+        color: 0x00ff88,
+        transparent: true,
+        opacity: 1 - (i / length)
+      });
+      
+      const text = new THREE.Mesh(geometry, material);
+      text.position.y = -i * fontSize;
+      stream.add(text);
+    }
+    
+    stream.position.set(
+      (Math.random() - 0.5) * 20,
+      Math.random() * 20 + 10,
+      (Math.random() - 0.5) * 20
+    );
+    
+    return stream;
+  }
+  
+  update(frequency) {
+    this.streams.forEach(stream => {
+      stream.position.y -= 0.1 * (1 + frequency);
+      if (stream.position.y < -15) {
+        stream.position.y = 15;
+      }
+    });
+  }
+}
+
+class VolumetricLight {
+  constructor(scene) {
+    this.scene = scene;
+    this.rays = new THREE.Group();
+    
+    const rayCount = 8;
+    const rayGeometry = new THREE.CylinderGeometry(0.1, 0.1, 20, 32);
+    const rayMaterial = new THREE.ShaderMaterial({
+      transparent: true,
+      uniforms: {
+        time: { value: 0 },
+        intensity: { value: 0 }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float time;
+        uniform float intensity;
+        varying vec2 vUv;
+        void main() {
+          float alpha = smoothstep(0.0, 0.2, 1.0 - length(vUv - vec2(0.5)));
+          vec3 color = vec3(0.0, 1.0, 0.5) * intensity;
+          gl_FragColor = vec4(color, alpha * 0.3);
+        }
+      `
+    });
+    
+    for (let i = 0; i < rayCount; i++) {
+      const ray = new THREE.Mesh(rayGeometry, rayMaterial.clone());
+      const angle = (i / rayCount) * Math.PI * 2;
+      ray.position.set(Math.cos(angle) * 5, 0, Math.sin(angle) * 5);
+      ray.rotation.z = Math.random() * Math.PI;
+      this.rays.add(ray);
+    }
+    
+    scene.add(this.rays);
+  }
+  
+  update(time, frequency) {
+    this.rays.children.forEach((ray, i) => {
+      ray.material.uniforms.time.value = time;
+      ray.material.uniforms.intensity.value = 0.5 + frequency * 0.5;
+      ray.rotation.z += 0.01 * (1 + frequency);
+    });
+  }
+}
+
+class ColorPalette {
+  constructor() {
+    this.colors = [
+      new THREE.Color(0x00ff88),
+      new THREE.Color(0x00ffff),
+      new THREE.Color(0xff00ff),
+      new THREE.Color(0xffff00)
+    ];
+    this.currentIndex = 0;
+    this.targetColor = this.colors[0];
+    this.currentColor = this.colors[0].clone();
+  }
+  
+  update(time, frequency) {
+    if (frequency > 0.8 && Math.random() > 0.9) {
+      this.currentIndex = (this.currentIndex + 1) % this.colors.length;
+      this.targetColor = this.colors[this.currentIndex];
+    }
+    
+    this.currentColor.lerp(this.targetColor, 0.05);
+    return this.currentColor;
+  }
+}
+
+class CameraController {
+  constructor(camera) {
+    this.camera = camera;
+    this.basePosition = camera.position.clone();
+    this.targetPosition = this.basePosition.clone();
+  }
+  
+  update(frequency) {
+    // Add subtle camera movement based on audio
+    const movement = frequency * 0.5;
+    this.targetPosition.x = this.basePosition.x + Math.sin(Date.now() * 0.001) * movement;
+    this.targetPosition.y = this.basePosition.y + Math.cos(Date.now() * 0.0015) * movement;
+    
+    this.camera.position.lerp(this.targetPosition, 0.05);
+    this.camera.lookAt(0, 0, 0);
+  }
+}
+
 class Experience {
   static instance = null;
 
@@ -407,6 +551,40 @@ class Experience {
     // Add neural pathways
     this.neuralPathways = new NeuralPathways(this.scene, this.crystalFragments);
     
+    this.digitalRain = new DigitalRain(this.scene);
+    this.volumetricLight = new VolumetricLight(this.scene);
+    this.colorPalette = new ColorPalette();
+    this.cameraController = new CameraController(this.camera);
+    
+    // Add chromatic aberration effect
+    const chromaticAberrationPass = new ShaderPass({
+      uniforms: {
+        tDiffuse: { value: null },
+        distortion: { value: 0.0 }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D tDiffuse;
+        uniform float distortion;
+        varying vec2 vUv;
+        void main() {
+          vec2 offset = distortion * (vUv - 0.5);
+          vec4 cr = texture2D(tDiffuse, vUv + offset);
+          vec4 cg = texture2D(tDiffuse, vUv);
+          vec4 cb = texture2D(tDiffuse, vUv - offset);
+          gl_FragColor = vec4(cr.r, cg.g, cb.b, 1.0);
+        }
+      `
+    });
+    this.composer.addPass(chromaticAberrationPass);
+    this.chromaticAberrationPass = chromaticAberrationPass;
+    
     // Add interaction listener
     this.renderer.domElement.addEventListener('click', this.onMouseClick.bind(this));
   }
@@ -460,10 +638,25 @@ class Experience {
     
     if (this.audioAnalyzer) {
       const frequency = this.audioAnalyzer.getAverageFrequency() / 255;
-      this.crystal.material.opacity = 0.5 + frequency * 0.5;
-      this.bloomPass.strength = 1 + frequency * 2;
-      this.energyField.material.uniforms.intensity.value = frequency;
-      this.energyField.material.uniforms.time.value = elapsedTime;
+      
+      // Update all the new systems
+      this.digitalRain.update(frequency);
+      this.volumetricLight.update(elapsedTime, frequency);
+      this.cameraController.update(frequency);
+      
+      // Update color palette
+      const currentColor = this.colorPalette.update(elapsedTime, frequency);
+      this.crystal.material.color.copy(currentColor);
+      
+      // Update chromatic aberration
+      this.chromaticAberrationPass.uniforms.distortion.value = frequency * 0.02;
+      
+      // Scale point light intensity with audio
+      this.scene.children.forEach(child => {
+        if (child.isPointLight) {
+          child.intensity = 1 + frequency * 2;
+        }
+      });
       
       // Update particle system
       this.particleSystem.update(frequency);
