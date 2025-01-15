@@ -6,16 +6,16 @@ import { UnrealBloomPass } from 'https://cdn.skypack.dev/three@0.136.0/examples/
 import { ShaderPass } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/postprocessing/ShaderPass.js';
 
 /* Future Enhancement Ideas:
- * 1. Create a central "brain" visualization with interconnected neurons
- * 2. Add fractal patterns that emerge and evolve with the music
- * 3. Implement data streams that flow between different elements
- * 4. Add holographic UI elements that appear at key moments
- * 5. Create geometric morphing transitions between scenes
- * 6. Implement audio-reactive environment fog effects
- * 7. Add floating code fragments that assemble into structures
- * 8. Create abstract "memory crystal" artifacts that store narrative moments
- * 9. Implement dynamic camera paths that follow data flows
- * 10. Add particle-based "thought bubbles" that form and dissolve
+ * 1. Add reactive environment mapping that changes based on audio
+ * 2. Create fractal-based visualizations that evolve with the music
+ * 3. Implement tensor visualization showing multi-dimensional data flow
+ * 4. Add quantum entanglement effects between particles
+ * 5. Create holographic interface elements that respond to user proximity
+ * 6. Implement time dilation effects during peak moments
+ * 7. Add crystalline growth simulations influenced by audio
+ * 8. Create abstract thought bubble visualizations
+ * 9. Implement digital aurora effects in the background
+ * 10. Add particle-based constellation formations
  */
 
 class AudioAnalyzer {
@@ -396,6 +396,303 @@ class CameraController {
   }
 }
 
+class ShockwaveEffect {
+  constructor(scene) {
+    this.scene = scene;
+    this.waves = new THREE.Group();
+    scene.add(this.waves);
+    
+    const shockwaveGeometry = new THREE.RingGeometry(0, 1, 32);
+    this.shockwaveMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        time: { value: 0 },
+        color: { value: new THREE.Color(0x00ff88) },
+        intensity: { value: 0 }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float time;
+        uniform vec3 color;
+        uniform float intensity;
+        varying vec2 vUv;
+        void main() {
+          float alpha = (1.0 - length(vUv * 2.0 - 1.0)) * intensity;
+          gl_FragColor = vec4(color, alpha);
+        }
+      `,
+      transparent: true,
+      side: THREE.DoubleSide
+    });
+  }
+
+  createWave(position) {
+    const wave = new THREE.Mesh(
+      new THREE.RingGeometry(0, 0.1, 32),
+      this.shockwaveMaterial.clone()
+    );
+    wave.position.copy(position);
+    wave.scale.setScalar(0.1);
+    wave.userData.startTime = this.clock.getElapsedTime();
+    this.waves.add(wave);
+    return wave;
+  }
+
+  update(frequency) {
+    if (frequency > 0.8 && Math.random() > 0.7) {
+      const position = new THREE.Vector3(
+        (Math.random() - 0.5) * 10,
+        (Math.random() - 0.5) * 10,
+        (Math.random() - 0.5) * 10
+      );
+      this.createWave(position);
+    }
+
+    this.waves.children.forEach((wave) => {
+      const age = this.clock.getElapsedTime() - wave.userData.startTime;
+      wave.scale.setScalar(age * 2);
+      wave.material.uniforms.intensity.value = Math.max(0, 1 - age * 0.5);
+      if (age > 2) this.waves.remove(wave);
+    });
+  }
+}
+
+class GeometricButterfly {
+  constructor(scene) {
+    this.scene = scene;
+    this.butterflies = new THREE.Group();
+    scene.add(this.butterflies);
+    
+    this.geometry = new THREE.BufferGeometry();
+    const points = [];
+    for (let i = 0; i < 50; i++) {
+      const angle = (i / 50) * Math.PI * 2;
+      const x = Math.sin(angle) * (1 + Math.sin(angle * 2) * 0.5);
+      const y = Math.cos(angle) * (1 + Math.sin(angle * 3) * 0.5);
+      points.push(new THREE.Vector3(x, y, 0));
+    }
+    this.geometry.setFromPoints(points);
+  }
+
+  createButterfly(position) {
+    const material = new THREE.LineBasicMaterial({
+      color: 0x00ff88,
+      transparent: true,
+      opacity: 0.8
+    });
+    
+    const butterfly = new THREE.Line(this.geometry, material);
+    butterfly.position.copy(position);
+    butterfly.scale.setScalar(0.5);
+    butterfly.userData.phase = Math.random() * Math.PI * 2;
+    this.butterflies.add(butterfly);
+  }
+
+  update(time, frequency) {
+    if (frequency > 0.7 && Math.random() > 0.8) {
+      const position = new THREE.Vector3(
+        (Math.random() - 0.5) * 10,
+        (Math.random() - 0.5) * 10,
+        (Math.random() - 0.5) * 10
+      );
+      this.createButterfly(position);
+    }
+
+    this.butterflies.children.forEach((butterfly) => {
+      butterfly.rotation.z = Math.sin(time * 2 + butterfly.userData.phase) * 0.3;
+      butterfly.position.y += Math.sin(time + butterfly.userData.phase) * 0.02;
+      butterfly.material.opacity -= 0.005;
+      
+      if (butterfly.material.opacity <= 0) {
+        this.butterflies.remove(butterfly);
+      }
+    });
+  }
+}
+
+class DataStream {
+  constructor(scene) {
+    this.scene = scene;
+    this.streams = new THREE.Group();
+    scene.add(this.streams);
+    
+    this.streamMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        time: { value: 0 },
+        color: { value: new THREE.Color(0x00ff88) },
+        flow: { value: 0 }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        uniform float time;
+        uniform float flow;
+        
+        void main() {
+          vUv = uv;
+          vec3 pos = position;
+          pos.y += sin(pos.x * 10.0 + time * 5.0) * 0.1 * flow;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float time;
+        uniform vec3 color;
+        varying vec2 vUv;
+        
+        void main() {
+          float stripe = sin(vUv.y * 50.0 - time * 10.0) * 0.5 + 0.5;
+          gl_FragColor = vec4(color, stripe * 0.5);
+        }
+      `,
+      transparent: true
+    });
+  }
+
+  createStream(start, end) {
+    const curve = new THREE.CubicBezierCurve3(
+      start,
+      start.clone().add(new THREE.Vector3(0, 2, 0)),
+      end.clone().add(new THREE.Vector3(0, -2, 0)),
+      end
+    );
+    
+    const geometry = new THREE.TubeGeometry(curve, 20, 0.05, 8, false);
+    const stream = new THREE.Mesh(geometry, this.streamMaterial.clone());
+    this.streams.add(stream);
+  }
+
+  update(time, frequency) {
+    this.streams.children.forEach((stream) => {
+      stream.material.uniforms.time.value = time;
+      stream.material.uniforms.flow.value = frequency;
+    });
+  }
+}
+
+class EnergyField {
+  constructor(scene) {
+    this.scene = scene;
+    this.field = new THREE.Group();
+    
+    const fieldGeometry = new THREE.TorusKnotGeometry(5, 0.5, 100, 16);
+    const fieldMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        time: { value: 0 },
+        intensity: { value: 0 },
+        color: { value: new THREE.Color(0x00ff88) }
+      },
+      vertexShader: `
+        varying vec3 vPosition;
+        varying vec3 vNormal;
+        uniform float time;
+        uniform float intensity;
+        
+        void main() {
+          vPosition = position;
+          vNormal = normal;
+          vec3 pos = position;
+          pos += normal * sin(time * 2.0 + position.x * 2.0) * intensity * 0.3;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vPosition;
+        varying vec3 vNormal;
+        uniform vec3 color;
+        uniform float intensity;
+        uniform float time;
+        
+        void main() {
+          float pulse = sin(vPosition.x * 10.0 + time * 3.0) * 0.5 + 0.5;
+          vec3 finalColor = color * (intensity * 0.5 + 0.5) * pulse;
+          float alpha = 0.3 * intensity;
+          gl_FragColor = vec4(finalColor, alpha);
+        }
+      `,
+      transparent: true,
+      side: THREE.DoubleSide
+    });
+    
+    this.fieldMesh = new THREE.Mesh(fieldGeometry, fieldMaterial);
+    this.field.add(this.fieldMesh);
+    scene.add(this.field);
+  }
+  
+  update(time, frequency) {
+    this.fieldMesh.material.uniforms.time.value = time;
+    this.fieldMesh.material.uniforms.intensity.value = frequency;
+    this.field.rotation.x = time * 0.1;
+    this.field.rotation.y = time * 0.15;
+  }
+}
+
+class QuantumTunnel {
+  constructor(scene) {
+    this.scene = scene;
+    this.tunnels = new THREE.Group();
+    
+    const tunnelGeometry = new THREE.CylinderGeometry(0.1, 0.1, 20, 32, 1, true);
+    const tunnelMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        time: { value: 0 },
+        intensity: { value: 0 }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float time;
+        uniform float intensity;
+        varying vec2 vUv;
+        
+        void main() {
+          float stripe = sin(vUv.y * 50.0 - time * 5.0) * 0.5 + 0.5;
+          vec3 color = vec3(0.0, 1.0, 0.5) * stripe * intensity;
+          float alpha = stripe * 0.5;
+          gl_FragColor = vec4(color, alpha);
+        }
+      `,
+      transparent: true,
+      side: THREE.DoubleSide
+    });
+    
+    for (let i = 0; i < 5; i++) {
+      const tunnel = new THREE.Mesh(tunnelGeometry, tunnelMaterial.clone());
+      tunnel.position.set(
+        (Math.random() - 0.5) * 20,
+        (Math.random() - 0.5) * 20,
+        (Math.random() - 0.5) * 20
+      );
+      tunnel.rotation.set(
+        Math.random() * Math.PI,
+        Math.random() * Math.PI,
+        Math.random() * Math.PI
+      );
+      this.tunnels.add(tunnel);
+    }
+    
+    scene.add(this.tunnels);
+  }
+  
+  update(time, frequency) {
+    this.tunnels.children.forEach((tunnel, i) => {
+      tunnel.material.uniforms.time.value = time;
+      tunnel.material.uniforms.intensity.value = frequency;
+      tunnel.rotation.x += 0.01 * (i + 1) * frequency;
+      tunnel.rotation.y += 0.01 * (i + 1) * frequency;
+    });
+  }
+}
+
 class Experience {
   static instance = null;
 
@@ -555,6 +852,11 @@ class Experience {
     this.volumetricLight = new VolumetricLight(this.scene);
     this.colorPalette = new ColorPalette();
     this.cameraController = new CameraController(this.camera);
+    this.shockwaveEffect = new ShockwaveEffect(this.scene);
+    this.geometricButterfly = new GeometricButterfly(this.scene);
+    this.dataStream = new DataStream(this.scene);
+    this.energyField = new EnergyField(this.scene);
+    this.quantumTunnel = new QuantumTunnel(this.scene);
     
     // Add chromatic aberration effect
     const chromaticAberrationPass = new ShaderPass({
@@ -640,6 +942,10 @@ class Experience {
       const frequency = this.audioAnalyzer.getAverageFrequency() / 255;
       
       // Update all the new systems
+      this.shockwaveEffect.update(frequency);
+      this.geometricButterfly.update(elapsedTime, frequency);
+      this.dataStream.update(elapsedTime, frequency);
+      
       this.digitalRain.update(frequency);
       this.volumetricLight.update(elapsedTime, frequency);
       this.cameraController.update(frequency);
@@ -672,6 +978,9 @@ class Experience {
       
       // Update neural pathways
       this.neuralPathways.update(frequency);
+      
+      this.energyField.update(elapsedTime, frequency);
+      this.quantumTunnel.update(elapsedTime, frequency);
     }
     
     this.narrativeManager.update(elapsedTime);
