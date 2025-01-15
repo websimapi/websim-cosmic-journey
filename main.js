@@ -53,7 +53,14 @@ class NarrativeManager {
 }
 
 class Experience {
+  static instance = null;
+
   constructor() {
+    if (Experience.instance) {
+      return Experience.instance;
+    }
+    Experience.instance = this;
+
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     this.renderer = new THREE.WebGLRenderer({
@@ -75,9 +82,12 @@ class Experience {
     this.narrativeManager = new NarrativeManager();
     this.init();
     this.setupAudio();
+    
+    window.addEventListener('resize', this.onResize.bind(this));
+    
     this.animate();
   }
-  
+
   setupPostProcessing() {
     const renderPass = new RenderPass(this.scene, this.camera);
     this.composer.addPass(renderPass);
@@ -88,9 +98,8 @@ class Experience {
     );
     this.composer.addPass(this.bloomPass);
   }
-  
+
   init() {
-    // Create cosmic environment
     const starGeometry = new THREE.BufferGeometry();
     const starCount = 10000;
     const starPositions = new Float32Array(starCount * 3);
@@ -108,7 +117,6 @@ class Experience {
     this.stars = new THREE.Points(starGeometry, starMaterial);
     this.scene.add(this.stars);
     
-    // Create central crystalline structure
     const crystalGeometry = new THREE.IcosahedronGeometry(3, 1);
     const crystalMaterial = new THREE.MeshPhongMaterial({
       color: 0x00ff88,
@@ -121,7 +129,6 @@ class Experience {
     this.crystal = new THREE.Mesh(crystalGeometry, crystalMaterial);
     this.scene.add(this.crystal);
     
-    // Add ambient and point lights
     const ambientLight = new THREE.AmbientLight(0x404040);
     this.scene.add(ambientLight);
     
@@ -133,7 +140,6 @@ class Experience {
     pointLight2.position.set(-10, -10, -10);
     this.scene.add(pointLight2);
     
-    // Add energy field
     const energyGeometry = new THREE.SphereGeometry(8, 32, 32);
     const energyMaterial = new THREE.ShaderMaterial({
       uniforms: {
@@ -164,36 +170,45 @@ class Experience {
     this.energyField = new THREE.Mesh(energyGeometry, energyMaterial);
     this.scene.add(this.energyField);
   }
-  
+
   setupAudio() {
-    this.audioElement = new Audio('/Bitwave Dreams - i Like this one - Sonauto.wav');
+    this.audioElement = new Audio('Bitwave Dreams - i Like this one - Sonauto.wav');
     this.audioElement.loop = true;
     
-    document.getElementById('startButton').addEventListener('click', () => {
-      this.audioElement.play();
-      document.getElementById('startContainer').style.display = 'none';
+    const startButton = document.getElementById('startButton');
+    startButton.addEventListener('click', () => {
+      if (!this.audioAnalyzer) {
+        this.audioAnalyzer = new AudioAnalyzer(this.audioElement);
+      }
+      
+      const playPromise = this.audioElement.play();
+      
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log('Audio playback started successfully');
+            document.getElementById('startContainer').style.display = 'none';
+          })
+          .catch(error => {
+            console.error('Audio playback failed:', error);
+          });
+      }
     });
-    this.audioAnalyzer = new AudioAnalyzer(this.audioElement);
   }
-  
+
   animate() {
     const elapsedTime = this.clock.getElapsedTime();
     
-    // Rotate crystal
     this.crystal.rotation.x = elapsedTime * 0.2;
     this.crystal.rotation.y = elapsedTime * 0.3;
     
-    // Pulse crystal scale
     const scale = 1 + Math.sin(elapsedTime * 2) * 0.1;
     this.crystal.scale.set(scale, scale, scale);
     
-    // Rotate stars slowly
     this.stars.rotation.y = elapsedTime * 0.05;
     
-    // Update controls
     this.controls.update();
     
-    // Update audio reactivity
     if (this.audioAnalyzer) {
       const frequency = this.audioAnalyzer.getAverageFrequency() / 255;
       this.crystal.material.opacity = 0.5 + frequency * 0.5;
@@ -202,15 +217,13 @@ class Experience {
       this.energyField.material.uniforms.time.value = elapsedTime;
     }
     
-    // Update narrative
     this.narrativeManager.update(elapsedTime);
     
-    // Render with post-processing
     this.composer.render();
     
     requestAnimationFrame(this.animate.bind(this));
   }
-  
+
   onResize() {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
@@ -219,11 +232,4 @@ class Experience {
   }
 }
 
-// Handle resize
-window.addEventListener('resize', () => {
-  const experience = new Experience();
-  experience.onResize();
-});
-
-// Initialize experience
 const experience = new Experience();
