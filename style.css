@@ -60,6 +60,12 @@ p {
   box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
 }
 
+@keyframes glow {
+  0% { text-shadow: 0 0 10px rgba(0, 255, 136, 0.5); }
+  50% { text-shadow: 0 0 20px rgba(0, 255, 136, 0.8); }
+  100% { text-shadow: 0 0 10px rgba(0, 255, 136, 0.5); }
+}
+
 #narrative {
   position: fixed;
   bottom: 50px;
@@ -73,4 +79,10 @@ p {
   transition: opacity 1s ease;
   text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
   pointer-events: none;
+  animation: glow 2s infinite;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 20px;
+  border-radius: 10px;
+  max-width: 80%;
+  backdrop-filter: blur(5px);
 }

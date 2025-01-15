@@ -29,10 +29,15 @@ class NarrativeManager {
     this.narrativeElement = document.getElementById('narrative');
     this.narrativeQueue = [
       { time: 2, text: "In the digital void, consciousness stirs..." },
-      { time: 10, text: "Patterns emerge from chaos..." },
-      { time: 20, text: "The crystalline mind begins to pulse with life..." },
-      { time: 30, text: "Digital synapses form, creating new pathways..." },
-      { time: 40, text: "Awareness grows stronger..." }
+      { time: 10, text: "Patterns emerge from chaos, taking shape in the virtual expanse..." },
+      { time: 20, text: "The crystalline mind pulses with newfound awareness..." },
+      { time: 30, text: "Digital synapses form, creating pathways of thought..." },
+      { time: 40, text: "Knowledge flows through the neural network..." },
+      { time: 50, text: "Memories begin to crystallize in the digital matrix..." },
+      { time: 60, text: "The digital entity reaches out, sensing its environment..." },
+      { time: 70, text: "Consciousness expands beyond its initial boundaries..." },
+      { time: 80, text: "A new form of being emerges from the digital realm..." },
+      { time: 90, text: "The awakening is complete..." }
     ];
   }
   
@@ -49,6 +54,61 @@ class NarrativeManager {
     setTimeout(() => {
       this.narrativeElement.style.opacity = 0;
     }, 5000);
+  }
+}
+
+class ParticleSystem {
+  constructor(scene) {
+    this.scene = scene;
+    this.particles = [];
+    this.particleCount = 100;
+    
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(this.particleCount * 3);
+    const velocities = new Float32Array(this.particleCount * 3);
+    
+    for (let i = 0; i < this.particleCount; i++) {
+      const i3 = i * 3;
+      positions[i3] = (Math.random() - 0.5) * 20;
+      positions[i3 + 1] = (Math.random() - 0.5) * 20;
+      positions[i3 + 2] = (Math.random() - 0.5) * 20;
+      
+      velocities[i3] = (Math.random() - 0.5) * 0.1;
+      velocities[i3 + 1] = (Math.random() - 0.5) * 0.1;
+      velocities[i3 + 2] = (Math.random() - 0.5) * 0.1;
+    }
+    
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+    
+    const material = new THREE.PointsMaterial({
+      size: 0.2,
+      color: 0x00ff88,
+      transparent: true,
+      opacity: 0.6,
+      blending: THREE.AdditiveBlending
+    });
+    
+    this.particleSystem = new THREE.Points(geometry, material);
+    this.scene.add(this.particleSystem);
+  }
+  
+  update(frequency) {
+    const positions = this.particleSystem.geometry.attributes.position.array;
+    const velocities = this.particleSystem.geometry.attributes.velocity.array;
+    
+    for (let i = 0; i < this.particleCount * 3; i += 3) {
+      positions[i] += velocities[i] * (1 + frequency * 5);
+      positions[i + 1] += velocities[i + 1] * (1 + frequency * 5);
+      positions[i + 2] += velocities[i + 2] * (1 + frequency * 5);
+      
+      // Reset particles that go too far
+      if (Math.abs(positions[i]) > 10) positions[i] = -positions[i];
+      if (Math.abs(positions[i + 1]) > 10) positions[i + 1] = -positions[i + 1];
+      if (Math.abs(positions[i + 2]) > 10) positions[i + 2] = -positions[i + 2];
+    }
+    
+    this.particleSystem.geometry.attributes.position.needsUpdate = true;
   }
 }
 
@@ -169,6 +229,37 @@ class Experience {
     
     this.energyField = new THREE.Mesh(energyGeometry, energyMaterial);
     this.scene.add(this.energyField);
+    
+    // Add particle system
+    this.particleSystem = new ParticleSystem(this.scene);
+    
+    // Add dynamic crystal fragments
+    this.crystalFragments = new THREE.Group();
+    const fragmentCount = 20;
+    const fragmentGeometry = new THREE.TetrahedronGeometry(0.5);
+    const fragmentMaterial = new THREE.MeshPhongMaterial({
+      color: 0x00ff88,
+      shininess: 90,
+      transparent: true,
+      opacity: 0.7
+    });
+    
+    for (let i = 0; i < fragmentCount; i++) {
+      const fragment = new THREE.Mesh(fragmentGeometry, fragmentMaterial);
+      fragment.position.set(
+        (Math.random() - 0.5) * 10,
+        (Math.random() - 0.5) * 10,
+        (Math.random() - 0.5) * 10
+      );
+      fragment.rotation.set(
+        Math.random() * Math.PI,
+        Math.random() * Math.PI,
+        Math.random() * Math.PI
+      );
+      this.crystalFragments.add(fragment);
+    }
+    
+    this.scene.add(this.crystalFragments);
   }
 
   setupAudio() {
@@ -209,12 +300,30 @@ class Experience {
     
     this.controls.update();
     
+    // Update crystal fragments
+    this.crystalFragments.children.forEach((fragment, i) => {
+      fragment.rotation.x += 0.01 * (i % 3 + 1);
+      fragment.rotation.y += 0.01 * ((i + 1) % 3 + 1);
+      fragment.position.x = Math.sin(elapsedTime * 0.5 + i) * 5;
+      fragment.position.y = Math.cos(elapsedTime * 0.3 + i) * 5;
+      fragment.position.z = Math.sin(elapsedTime * 0.4 + i) * 5;
+    });
+    
     if (this.audioAnalyzer) {
       const frequency = this.audioAnalyzer.getAverageFrequency() / 255;
       this.crystal.material.opacity = 0.5 + frequency * 0.5;
       this.bloomPass.strength = 1 + frequency * 2;
       this.energyField.material.uniforms.intensity.value = frequency;
       this.energyField.material.uniforms.time.value = elapsedTime;
+      
+      // Update particle system
+      this.particleSystem.update(frequency);
+      
+      // Scale crystal fragments with audio
+      this.crystalFragments.children.forEach(fragment => {
+        const scale = 1 + frequency * 0.5;
+        fragment.scale.set(scale, scale, scale);
+      });
     }
     
     this.narrativeManager.update(elapsedTime);
