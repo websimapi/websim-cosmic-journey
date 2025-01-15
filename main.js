@@ -16,6 +16,16 @@ import { ShaderPass } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/p
  * 8. Implement a "digital rain" effect with falling characters
  * 9. Create an energy field that distorts space around the crystal
  * 10. Add floating mathematical equations and digital symbols
+ * 11. Create neural pathways between crystal fragments that glow and pulse with audio.
+ * 12. Implement user interaction: clicking on the crystal could trigger a visual effect.
+ * 13. Add subtle camera movements that follow the rhythm of the music.
+ * 14. Develop a more complex particle system that forms temporary shapes or patterns.
+ * 15. Introduce depth of field effect to focus on certain elements.
+ * 16. Experiment with different color palettes that shift over time or with the music.
+ * 17. Add a subtle chromatic aberration effect for a digital/holographic feel.
+ * 18. Create a sense of movement or flow in the background starfield.
+ * 19. Animate the intensity of the point lights based on audio peaks.
+ * 20. Introduce a subtle vignette effect to draw focus to the center of the scene.
  */
 
 class AudioAnalyzer {
@@ -218,6 +228,30 @@ class DigitalSymbols {
   }
 }
 
+class NeuralPathways {
+  constructor(scene, crystalFragments) {
+    this.scene = scene;
+    this.crystalFragments = crystalFragments.children;
+    this.lines = [];
+    this.material = new THREE.LineBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.5 });
+
+    for (let i = 0; i < this.crystalFragments.length; i++) {
+      for (let j = i + 1; j < this.crystalFragments.length; j++) {
+        const geometry = new THREE.BufferGeometry().setFromPoints([this.crystalFragments[i].position, this.crystalFragments[j].position]);
+        const line = new THREE.Line(geometry, this.material);
+        this.scene.add(line);
+        this.lines.push(line);
+      }
+    }
+  }
+
+  update(frequency) {
+    this.lines.forEach(line => {
+      line.material.opacity = 0.3 + frequency * 0.7;
+    });
+  }
+}
+
 class Experience {
   static instance = null;
 
@@ -369,6 +403,12 @@ class Experience {
     
     this.dnaHelix = new DNAHelix(this.scene);
     this.digitalSymbols = new DigitalSymbols(this.scene);
+    
+    // Add neural pathways
+    this.neuralPathways = new NeuralPathways(this.scene, this.crystalFragments);
+    
+    // Add interaction listener
+    this.renderer.domElement.addEventListener('click', this.onMouseClick.bind(this));
   }
 
   setupAudio() {
@@ -436,6 +476,9 @@ class Experience {
       
       this.dnaHelix.update(elapsedTime, frequency);
       this.digitalSymbols.update(elapsedTime, frequency);
+      
+      // Update neural pathways
+      this.neuralPathways.update(frequency);
     }
     
     this.narrativeManager.update(elapsedTime);
@@ -450,6 +493,86 @@ class Experience {
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.composer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  onMouseClick(event) {
+    event.preventDefault();
+
+    const mouse = new THREE.Vector2();
+    mouse.x = (event.clientX / this.renderer.domElement.clientWidth) * 2 - 1;
+    mouse.y = - (event.clientY / this.renderer.domElement.clientHeight) * 2 + 1;
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, this.camera);
+
+    const intersects = raycaster.intersectObject(this.crystal);
+
+    if (intersects.length > 0) {
+      // Change crystal color on click
+      this.crystal.material.color.setHex(Math.random() * 0xffffff);
+
+      // Trigger a small burst of particles
+      const burstCount = 10;
+      const burstGeometry = new THREE.BufferGeometry();
+      const burstPositions = new Float32Array(burstCount * 3);
+      const burstVelocities = new Float32Array(burstCount * 3);
+
+      for (let i = 0; i < burstCount; i++) {
+        const i3 = i * 3;
+        burstPositions[i3] = intersects[0].point.x;
+        burstPositions[i3 + 1] = intersects[0].point.y;
+        burstPositions[i3 + 2] = intersects[0].point.z;
+
+        burstVelocities[i3] = (Math.random() - 0.5) * 0.5;
+        burstVelocities[i3 + 1] = (Math.random() - 0.5) * 0.5;
+        burstVelocities[i3 + 2] = (Math.random() - 0.5) * 0.5;
+      }
+
+      burstGeometry.setAttribute('position', new THREE.BufferAttribute(burstPositions, 3));
+      burstGeometry.setAttribute('velocity', new THREE.BufferAttribute(burstVelocities, 3));
+
+      const burstMaterial = new THREE.PointsMaterial({
+        size: 0.1,
+        color: this.crystal.material.color,
+        blending: THREE.AdditiveBlending,
+        transparent: true,
+        opacity: 1
+      });
+
+      const particleBurst = new THREE.Points(burstGeometry, burstMaterial);
+      this.scene.add(particleBurst);
+
+      // Animate the burst
+      const startTime = this.clock.getElapsedTime();
+      const animateBurst = () => {
+        const time = this.clock.getElapsedTime() - startTime;
+        const positions = particleBurst.geometry.attributes.position.array;
+        const velocities = particleBurst.geometry.attributes.velocity.array;
+        const decayFactor = 0.98;
+
+        for (let i = 0; i < burstCount * 3; i += 3) {
+          positions[i] += velocities[i] * 0.1;
+          positions[i + 1] += velocities[i + 1] * 0.1;
+          positions[i + 2] += velocities[i + 2] * 0.1;
+          velocities[i] *= decayFactor;
+          velocities[i + 1] *= decayFactor;
+          velocities[i + 2] *= decayFactor;
+        }
+
+        particleBurst.geometry.attributes.position.needsUpdate = true;
+        particleBurst.material.opacity -= 0.02;
+
+        if (particleBurst.material.opacity > 0) {
+          requestAnimationFrame(animateBurst);
+        } else {
+          this.scene.remove(particleBurst);
+          particleBurst.geometry.dispose();
+          particleBurst.material.dispose();
+        }
+      };
+
+      animateBurst();
+    }
   }
 }
 
