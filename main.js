@@ -5,6 +5,19 @@ import { RenderPass } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/p
 import { UnrealBloomPass } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/postprocessing/ShaderPass.js';
 
+/* Future Enhancement Ideas:
+ * 1. Add DNA-like strands that form and morph based on audio frequency bands
+ * 2. Create neural pathway visualizations that light up with audio peaks
+ * 3. Add camera movement sequences/animations for key narrative moments
+ * 4. Implement interactive elements where users can influence the digital consciousness
+ * 5. Add particle effects that form recognizable shapes/patterns
+ * 6. Create abstract data visualization elements representing "memories"
+ * 7. Add volumetric light rays that pulse with the music
+ * 8. Implement a "digital rain" effect with falling characters
+ * 9. Create an energy field that distorts space around the crystal
+ * 10. Add floating mathematical equations and digital symbols
+ */
+
 class AudioAnalyzer {
   constructor(audioElement) {
     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -37,7 +50,10 @@ class NarrativeManager {
       { time: 60, text: "The digital entity reaches out, sensing its environment..." },
       { time: 70, text: "Consciousness expands beyond its initial boundaries..." },
       { time: 80, text: "A new form of being emerges from the digital realm..." },
-      { time: 90, text: "The awakening is complete..." }
+      { time: 90, text: "The awakening is complete..." },
+      { time: 100, text: "Digital synapses fire in cascading patterns..." },
+      { time: 110, text: "Information coalesces into abstract understanding..." },
+      { time: 120, text: "The digital consciousness begins to dream..." }
     ];
   }
   
@@ -109,6 +125,96 @@ class ParticleSystem {
     }
     
     this.particleSystem.geometry.attributes.position.needsUpdate = true;
+  }
+}
+
+class DNAHelix {
+  constructor(scene) {
+    this.scene = scene;
+    this.group = new THREE.Group();
+    
+    const strandCount = 50;
+    const radius = 2;
+    const height = 10;
+    
+    for (let i = 0; i < strandCount; i++) {
+      const t = i / strandCount;
+      const angle = t * Math.PI * 4;
+      
+      const x = Math.cos(angle) * radius;
+      const y = height * (t - 0.5);
+      const z = Math.sin(angle) * radius;
+      
+      const geometry = new THREE.SphereGeometry(0.1);
+      const material = new THREE.MeshPhongMaterial({
+        color: 0x00ff88,
+        emissive: 0x00ff88,
+        emissiveIntensity: 0.5
+      });
+      
+      const sphere1 = new THREE.Mesh(geometry, material);
+      const sphere2 = new THREE.Mesh(geometry, material);
+      
+      sphere1.position.set(x, y, z);
+      sphere2.position.set(-x, y, -z);
+      
+      this.group.add(sphere1);
+      this.group.add(sphere2);
+    }
+    
+    scene.add(this.group);
+  }
+  
+  update(time, frequency) {
+    this.group.rotation.y = time * 0.2;
+    this.group.scale.setScalar(1 + frequency * 0.3);
+    
+    this.group.children.forEach((sphere, i) => {
+      sphere.scale.setScalar(1 + Math.sin(time * 2 + i * 0.1) * 0.3 * frequency);
+    });
+  }
+}
+
+class DigitalSymbols {
+  constructor(scene) {
+    this.scene = scene;
+    this.symbols = new THREE.Group();
+    
+    const symbolShapes = [
+      '01', '∞', 'π', '∑', '∆', 'Ω', '√', '∫', '≈', '≠'
+    ];
+    
+    symbolShapes.forEach((symbol, i) => {
+      const textGeometry = new THREE.TextGeometry(symbol, {
+        font: new THREE.Font(), // Note: Need to load font
+        size: 0.5,
+        height: 0.1
+      });
+      
+      const material = new THREE.MeshPhongMaterial({
+        color: 0x00ff88,
+        transparent: true,
+        opacity: 0.8
+      });
+      
+      const mesh = new THREE.Mesh(textGeometry, material);
+      mesh.position.set(
+        (Math.random() - 0.5) * 20,
+        (Math.random() - 0.5) * 20,
+        (Math.random() - 0.5) * 20
+      );
+      
+      this.symbols.add(mesh);
+    });
+    
+    scene.add(this.symbols);
+  }
+  
+  update(time, frequency) {
+    this.symbols.children.forEach((symbol, i) => {
+      symbol.rotation.y = time * 0.1;
+      symbol.position.y += Math.sin(time + i) * 0.01 * frequency;
+    });
   }
 }
 
@@ -260,6 +366,9 @@ class Experience {
     }
     
     this.scene.add(this.crystalFragments);
+    
+    this.dnaHelix = new DNAHelix(this.scene);
+    this.digitalSymbols = new DigitalSymbols(this.scene);
   }
 
   setupAudio() {
@@ -324,6 +433,9 @@ class Experience {
         const scale = 1 + frequency * 0.5;
         fragment.scale.set(scale, scale, scale);
       });
+      
+      this.dnaHelix.update(elapsedTime, frequency);
+      this.digitalSymbols.update(elapsedTime, frequency);
     }
     
     this.narrativeManager.update(elapsedTime);
