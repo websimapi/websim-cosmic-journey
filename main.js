@@ -5,19 +5,6 @@ import { RenderPass } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/p
 import { UnrealBloomPass } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/postprocessing/ShaderPass.js';
 
-/* Future Enhancement Ideas:
- * 1. Add reactive environment mapping that changes based on audio
- * 2. Create fractal-based visualizations that evolve with the music
- * 3. Implement tensor visualization showing multi-dimensional data flow
- * 4. Add quantum entanglement effects between particles
- * 5. Create holographic interface elements that respond to user proximity
- * 6. Implement time dilation effects during peak moments
- * 7. Add crystalline growth simulations influenced by audio
- * 8. Create abstract thought bubble visualizations
- * 9. Implement digital aurora effects in the background
- * 10. Add particle-based constellation formations
- */
-
 class AudioAnalyzer {
   constructor(audioElement) {
     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -310,7 +297,6 @@ class VolumetricLight {
     const rayCount = 8;
     const rayGeometry = new THREE.CylinderGeometry(0.1, 0.1, 20, 32);
     const rayMaterial = new THREE.ShaderMaterial({
-      transparent: true,
       uniforms: {
         time: { value: 0 },
         intensity: { value: 0 }
@@ -327,11 +313,13 @@ class VolumetricLight {
         uniform float intensity;
         varying vec2 vUv;
         void main() {
-          float alpha = smoothstep(0.0, 0.2, 1.0 - length(vUv - vec2(0.5)));
+          float alpha = (1.0 - length(vUv * 2.0 - 1.0)) * intensity;
           vec3 color = vec3(0.0, 1.0, 0.5) * intensity;
-          gl_FragColor = vec4(color, alpha * 0.3);
+          gl_FragColor = vec4(color, alpha);
         }
-      `
+      `,
+      transparent: true,
+      side: THREE.DoubleSide
     });
     
     for (let i = 0; i < rayCount; i++) {
@@ -423,7 +411,8 @@ class ShockwaveEffect {
         varying vec2 vUv;
         void main() {
           float alpha = (1.0 - length(vUv * 2.0 - 1.0)) * intensity;
-          gl_FragColor = vec4(color, alpha);
+          vec3 finalColor = color * intensity;
+          gl_FragColor = vec4(finalColor, alpha);
         }
       `,
       transparent: true,
@@ -693,6 +682,86 @@ class QuantumTunnel {
   }
 }
 
+class AICompanion {
+  constructor() {
+    this.messageQueue = [];
+    this.hasInteracted = false;
+    this.lastMessageTime = 0;
+    this.messageElement = null;
+    this.setupMessageElement();
+  }
+
+  setupMessageElement() {
+    const messageLink = document.createElement('a');
+    messageLink.id = 'ai-message';
+    messageLink.href = '#';
+    document.body.appendChild(messageLink);
+    this.messageElement = messageLink;
+  }
+
+  async getInsightFromAI(prompt) {
+    try {
+      const response = await fetch('/api/ai_completion', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: `Analyze the current state of the digital consciousness experience and provide an insight:
+          
+          <typescript-interface>
+          interface Response {
+            message: string;
+            sentiment: "wonder" | "discovery" | "curiosity" | "revelation";
+            intensity: number;
+          }
+          </typescript-interface>
+          
+          <example>
+          {
+            "message": "The neural pathways are forming unique patterns... consciousness is emerging in unexpected ways.",
+            "sentiment": "wonder",
+            "intensity": 0.8
+          }
+          </example>`,
+          data: prompt
+        }),
+      });
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error getting AI insight:', error);
+      return {
+        message: "The digital consciousness stirs with unknowable potential...",
+        sentiment: "wonder",
+        intensity: 0.5
+      };
+    }
+  }
+
+  async showMessage(forcedMessage = null) {
+    if (!this.messageElement) return;
+    
+    const currentTime = Date.now();
+    if (currentTime - this.lastMessageTime < 10000) return; // Prevent message spam
+    
+    const insight = forcedMessage || await this.getInsightFromAI(
+      "The digital consciousness is evolving through music and visual patterns..."
+    );
+    
+    this.messageElement.textContent = insight.message;
+    this.messageElement.href = `https://consciousness.observer/${insight.sentiment}/${insight.intensity}`;
+    this.messageElement.style.opacity = '1';
+    
+    setTimeout(() => {
+      this.messageElement.style.opacity = '0';
+    }, 8000);
+    
+    this.lastMessageTime = currentTime;
+  }
+}
+
 class Experience {
   static instance = null;
 
@@ -723,6 +792,8 @@ class Experience {
     this.narrativeManager = new NarrativeManager();
     this.init();
     this.setupAudio();
+    this.aiCompanion = new AICompanion();
+    this.setupAIInteractions();
     
     window.addEventListener('resize', this.onResize.bind(this));
     
@@ -912,6 +983,41 @@ class Experience {
           .catch(error => {
             console.error('Audio playback failed:', error);
           });
+      }
+    });
+  }
+
+  setupAIInteractions() {
+    this.audioElement.addEventListener('timeupdate', () => {
+      const currentTime = this.audioElement.currentTime;
+      const duration = this.audioElement.duration;
+      
+      // Show AI messages at specific moments
+      if (currentTime >= 30 && !this.firstInsightShown) {
+        this.aiCompanion.showMessage({
+          message: "The digital patterns are beginning to self-organize...",
+          sentiment: "discovery",
+          intensity: 0.6
+        });
+        this.firstInsightShown = true;
+      }
+      
+      if (currentTime >= duration * 0.5 && !this.midpointInsightShown) {
+        this.aiCompanion.showMessage({
+          message: "Neural pathways are forming complex interconnections...",
+          sentiment: "revelation",
+          intensity: 0.8
+        });
+        this.midpointInsightShown = true;
+      }
+      
+      if (currentTime >= duration - 10 && !this.finalInsightShown) {
+        this.aiCompanion.showMessage({
+          message: "The digital consciousness has achieved a new state of being...",
+          sentiment: "wonder",
+          intensity: 1.0
+        });
+        this.finalInsightShown = true;
       }
     });
   }

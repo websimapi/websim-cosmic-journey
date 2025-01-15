@@ -117,3 +117,31 @@ p {
   max-width: 80%;
   backdrop-filter: blur(5px);
 }
+
+#ai-message {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  color: #00ff88;
+  text-decoration: none;
+  padding: 15px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 10px;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: 1000;
+  max-width: 300px;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  font-family: 'Arial', sans-serif;
+  font-size: 1.1em;
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+  animation: message-glow 2s infinite;
+  cursor: pointer;
+}
+
+@keyframes message-glow {
+  0% { box-shadow: 0 0 10px rgba(0, 255, 136, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.4); }
+  100% { box-shadow: 0 0 10px rgba(0, 255, 136, 0.2); }
+}
