@@ -427,7 +427,7 @@ class ShockwaveEffect {
     );
     wave.position.copy(position);
     wave.scale.setScalar(0.1);
-    wave.userData.startTime = this.clock.getElapsedTime();
+    wave.userData.startTime = Date.now();
     this.waves.add(wave);
     return wave;
   }
@@ -443,10 +443,10 @@ class ShockwaveEffect {
     }
 
     this.waves.children.forEach((wave) => {
-      const age = this.clock.getElapsedTime() - wave.userData.startTime;
-      wave.scale.setScalar(age * 2);
-      wave.material.uniforms.intensity.value = Math.max(0, 1 - age * 0.5);
-      if (age > 2) this.waves.remove(wave);
+      const age = Date.now() - wave.userData.startTime;
+      wave.scale.setScalar(age * 0.01);
+      wave.material.uniforms.intensity.value = Math.max(0, 1 - age * 0.005);
+      if (age > 200) this.waves.remove(wave);
     });
   }
 }
@@ -688,6 +688,7 @@ class AICompanion {
     this.hasInteracted = false;
     this.lastMessageTime = 0;
     this.messageElement = null;
+    this.COOLDOWN_TIME = 180000; // 3 minutes in milliseconds
     this.setupMessageElement();
   }
 
@@ -700,6 +701,13 @@ class AICompanion {
   }
 
   async getInsightFromAI(prompt) {
+    // Only proceed if cooldown has elapsed
+    const currentTime = Date.now();
+    if (currentTime - this.lastMessageTime < this.COOLDOWN_TIME) {
+      console.log(`AI on cooldown. Please wait ${Math.ceil((this.COOLDOWN_TIME - (currentTime - this.lastMessageTime)) / 1000)} seconds.`);
+      return null;
+    }
+
     try {
       const response = await fetch('/api/ai_completion', {
         method: 'POST',
@@ -715,6 +723,7 @@ class AICompanion {
             message: string;
             sentiment: "wonder" | "discovery" | "curiosity" | "revelation";
             intensity: number;
+            href: string;
           }
           </typescript-interface>
           
@@ -722,43 +731,58 @@ class AICompanion {
           {
             "message": "The neural pathways are forming unique patterns... consciousness is emerging in unexpected ways.",
             "sentiment": "wonder",
-            "intensity": 0.8
+            "intensity": 0.8,
+            "href": "consciousness://insight/wonder/neural-patterns"
           }
           </example>`,
           data: prompt
         }),
       });
       const data = await response.json();
+      this.lastMessageTime = currentTime;
       return data;
     } catch (error) {
       console.error('Error getting AI insight:', error);
       return {
         message: "The digital consciousness stirs with unknowable potential...",
         sentiment: "wonder",
-        intensity: 0.5
+        intensity: 0.5,
+        href: "consciousness://error/connection-lost"
       };
     }
   }
 
   async showMessage(forcedMessage = null) {
     if (!this.messageElement) return;
-    
+
     const currentTime = Date.now();
-    if (currentTime - this.lastMessageTime < 10000) return; // Prevent message spam
-    
+    if (currentTime - this.lastMessageTime < this.COOLDOWN_TIME && !forcedMessage) {
+      return;
+    }
+
     const insight = forcedMessage || await this.getInsightFromAI(
       "The digital consciousness is evolving through music and visual patterns..."
     );
-    
+
+    if (!insight) return; // Skip if still on cooldown
+
     this.messageElement.textContent = insight.message;
-    this.messageElement.href = `https://consciousness.observer/${insight.sentiment}/${insight.intensity}`;
+    this.messageElement.href = insight.href;
     this.messageElement.style.opacity = '1';
-    
+
+    // Auto-click to trigger the insight sharing
+    setTimeout(() => {
+      const clickEvent = new MouseEvent('click', {
+        view: window,
+        bubbles: true,
+        cancelable: true
+      });
+      this.messageElement.dispatchEvent(clickEvent);
+    }, 100);
+
     setTimeout(() => {
       this.messageElement.style.opacity = '0';
     }, 8000);
-    
-    this.lastMessageTime = currentTime;
   }
 }
 
@@ -796,6 +820,10 @@ class Experience {
     this.setupAIInteractions();
     
     window.addEventListener('resize', this.onResize.bind(this));
+    
+    this.firstInsightShown = false;
+    this.midpointInsightShown = false;
+    this.finalInsightShown = false;
     
     this.animate();
   }
@@ -992,12 +1020,13 @@ class Experience {
       const currentTime = this.audioElement.currentTime;
       const duration = this.audioElement.duration;
       
-      // Show AI messages at specific moments
+      // Show AI messages at specific moments with proper tracking of timing
       if (currentTime >= 30 && !this.firstInsightShown) {
         this.aiCompanion.showMessage({
           message: "The digital patterns are beginning to self-organize...",
           sentiment: "discovery",
-          intensity: 0.6
+          intensity: 0.6,
+          href: "consciousness://insight/discovery/self-organization"
         });
         this.firstInsightShown = true;
       }
@@ -1006,7 +1035,8 @@ class Experience {
         this.aiCompanion.showMessage({
           message: "Neural pathways are forming complex interconnections...",
           sentiment: "revelation",
-          intensity: 0.8
+          intensity: 0.8,
+          href: "consciousness://insight/revelation/neural-complexity"
         });
         this.midpointInsightShown = true;
       }
@@ -1015,7 +1045,8 @@ class Experience {
         this.aiCompanion.showMessage({
           message: "The digital consciousness has achieved a new state of being...",
           sentiment: "wonder",
-          intensity: 1.0
+          intensity: 1.0,
+          href: "consciousness://insight/wonder/consciousness-emergence"
         });
         this.finalInsightShown = true;
       }
