@@ -384,123 +384,70 @@ class CameraController {
   }
 }
 
-class ShockwaveEffect {
-  constructor(scene) {
-    this.scene = scene;
-    this.waves = new THREE.Group();
-    scene.add(this.waves);
-    
-    const shockwaveGeometry = new THREE.RingGeometry(0, 1, 32);
-    this.shockwaveMaterial = new THREE.ShaderMaterial({
-      uniforms: {
-        time: { value: 0 },
-        color: { value: new THREE.Color(0x00ff88) },
-        intensity: { value: 0 }
-      },
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform float time;
-        uniform vec3 color;
-        uniform float intensity;
-        varying vec2 vUv;
-        void main() {
-          float alpha = (1.0 - length(vUv * 2.0 - 1.0)) * intensity;
-          vec3 finalColor = color * intensity;
-          gl_FragColor = vec4(finalColor, alpha);
-        }
-      `,
-      transparent: true,
-      side: THREE.DoubleSide
-    });
-  }
-
-  createWave(position) {
-    const wave = new THREE.Mesh(
-      new THREE.RingGeometry(0, 0.1, 32),
-      this.shockwaveMaterial.clone()
-    );
-    wave.position.copy(position);
-    wave.scale.setScalar(0.1);
-    wave.userData.startTime = this.clock.getElapsedTime();
-    this.waves.add(wave);
-    return wave;
-  }
-
-  update(frequency) {
-    if (frequency > 0.8 && Math.random() > 0.7) {
-      const position = new THREE.Vector3(
-        (Math.random() - 0.5) * 10,
-        (Math.random() - 0.5) * 10,
-        (Math.random() - 0.5) * 10
-      );
-      this.createWave(position);
-    }
-
-    this.waves.children.forEach((wave) => {
-      const age = this.clock.getElapsedTime() - wave.userData.startTime;
-      wave.scale.setScalar(age * 2);
-      wave.material.uniforms.intensity.value = Math.max(0, 1 - age * 0.5);
-      if (age > 2) this.waves.remove(wave);
-    });
-  }
-}
-
 class GeometricButterfly {
   constructor(scene) {
     this.scene = scene;
     this.butterflies = new THREE.Group();
     scene.add(this.butterflies);
     
-    this.geometry = new THREE.BufferGeometry();
-    const points = [];
-    for (let i = 0; i < 50; i++) {
-      const angle = (i / 50) * Math.PI * 2;
-      const x = Math.sin(angle) * (1 + Math.sin(angle * 2) * 0.5);
-      const y = Math.cos(angle) * (1 + Math.sin(angle * 3) * 0.5);
-      points.push(new THREE.Vector3(x, y, 0));
-    }
-    this.geometry.setFromPoints(points);
-  }
-
-  createButterfly(position) {
-    const material = new THREE.LineBasicMaterial({
+    const geometry = new THREE.BufferGeometry();
+    const points = this.createButterflyShape();
+    geometry.setFromPoints(points);
+    
+    this.geometry = geometry;
+    this.material = new THREE.LineBasicMaterial({
       color: 0x00ff88,
       transparent: true,
-      opacity: 0.8
+      opacity: 0.6,
+      blending: THREE.AdditiveBlending
     });
+  }
+
+  createButterflyShape() {
+    const points = [];
+    const size = 1;
+    const detail = 50;
     
-    const butterfly = new THREE.Line(this.geometry, material);
-    butterfly.position.copy(position);
-    butterfly.scale.setScalar(0.5);
-    butterfly.userData.phase = Math.random() * Math.PI * 2;
-    this.butterflies.add(butterfly);
+    for (let i = 0; i < detail; i++) {
+      const t = (i / detail) * Math.PI * 2;
+      const x = size * Math.sin(t) * Math.exp(Math.cos(t));
+      const y = size * Math.cos(t) * Math.exp(Math.cos(t));
+      points.push(new THREE.Vector3(x, y, 0));
+    }
+    
+    return points;
   }
 
   update(time, frequency) {
-    if (frequency > 0.7 && Math.random() > 0.8) {
-      const position = new THREE.Vector3(
-        (Math.random() - 0.5) * 10,
-        (Math.random() - 0.5) * 10,
-        (Math.random() - 0.5) * 10
-      );
-      this.createButterfly(position);
+    if (Math.random() < 0.03 * frequency) {
+      this.addButterfly();
     }
-
-    this.butterflies.children.forEach((butterfly) => {
-      butterfly.rotation.z = Math.sin(time * 2 + butterfly.userData.phase) * 0.3;
-      butterfly.position.y += Math.sin(time + butterfly.userData.phase) * 0.02;
-      butterfly.material.opacity -= 0.005;
+    
+    this.butterflies.children.forEach((butterfly, i) => {
+      butterfly.rotation.z = Math.sin(time * 2 + i) * 0.2;
+      butterfly.position.y += Math.sin(time + i * 0.1) * 0.02;
+      butterfly.material.opacity -= 0.002;
       
       if (butterfly.material.opacity <= 0) {
         this.butterflies.remove(butterfly);
       }
     });
+  }
+
+  addButterfly() {
+    const butterfly = new THREE.Line(
+      this.geometry,
+      this.material.clone()
+    );
+    
+    butterfly.position.set(
+      (Math.random() - 0.5) * 20,
+      (Math.random() - 0.5) * 20,
+      (Math.random() - 0.5) * 20
+    );
+    
+    butterfly.scale.setScalar(0.5 + Math.random() * 0.5);
+    this.butterflies.add(butterfly);
   }
 }
 
@@ -685,19 +632,19 @@ class QuantumTunnel {
 class AICompanion {
   constructor() {
     this.messageQueue = [];
-    this.hasInteracted = false;
-    this.lastMessageTime = 0;
     this.messageElement = null;
     this.allMessages = [];
     this.setupMessageElement();
+    this.lastInteractionTime = Date.now();
+    this.insights = [];
   }
 
   setupMessageElement() {
-    const messageLink = document.createElement('a');
-    messageLink.id = 'ai-message';
-    messageLink.href = '#';
-    document.body.appendChild(messageLink);
-    this.messageElement = messageLink;
+    const messageElement = document.createElement('a');
+    messageElement.id = 'ai-message';
+    messageElement.href = '#';
+    document.body.appendChild(messageElement);
+    this.messageElement = messageElement;
   }
 
   async getInsightFromAI(prompt) {
@@ -706,10 +653,9 @@ class AICompanion {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
         },
         body: JSON.stringify({
-          prompt: `Analyze the current state of the digital consciousness experience and provide an insight:
+          prompt: `Analyze the digital consciousness experience and provide an insight:
           
           <typescript-interface>
           interface Response {
@@ -717,24 +663,18 @@ class AICompanion {
             sentiment: "wonder" | "discovery" | "curiosity" | "revelation";
             intensity: number;
           }
-          </typescript-interface>
-          
-          <example>
-          {
-            "message": "The neural pathways are forming unique patterns... consciousness is emerging in unexpected ways.",
-            "sentiment": "wonder",
-            "intensity": 0.8
-          }
-          </example>`,
+          </typescript-interface>`,
           data: prompt
-        }),
+        })
       });
+      
       const data = await response.json();
+      this.insights.push(data);
       return data;
     } catch (error) {
       console.error('Error getting AI insight:', error);
       return {
-        message: "The digital consciousness stirs with unknowable potential...",
+        message: "The digital consciousness evolves in mysterious ways...",
         sentiment: "wonder",
         intensity: 0.5
       };
@@ -745,20 +685,22 @@ class AICompanion {
     if (!this.messageElement) return;
     
     const currentTime = Date.now();
-    if (currentTime - this.lastMessageTime < 10000) return;
+    if (currentTime - this.lastInteractionTime < 10000) return;
     
     const insight = forcedMessage || await this.getInsightFromAI(
       "The digital consciousness is evolving through music and visual patterns..."
     );
     
     this.allMessages.push(insight.message);
-    
     const allMessagesText = this.allMessages.join(' | ');
+    
+    // Set href to encoded insights URL
     this.messageElement.href = `https://consciousness.observer/insights/${encodeURIComponent(allMessagesText)}`;
     
     this.messageElement.textContent = insight.message;
     this.messageElement.style.opacity = '1';
     
+    // Only trigger click if we have messages
     if (this.allMessages.length > 0) {
       this.messageElement.click();
     }
@@ -767,13 +709,11 @@ class AICompanion {
       this.messageElement.style.opacity = '0';
     }, 8000);
     
-    this.lastMessageTime = currentTime;
+    this.lastInteractionTime = currentTime;
   }
 }
 
 class Experience {
-  static instance = null;
-
   constructor() {
     if (Experience.instance) {
       return Experience.instance;
@@ -997,6 +937,41 @@ class Experience {
   }
 
   setupAIInteractions() {
+    this.audioElement.addEventListener('timeupdate', () => {
+      const currentTime = this.audioElement.currentTime;
+      const duration = this.audioElement.duration;
+      
+      // Show AI messages at specific moments
+      if (currentTime >= 30 && !this.firstInsightShown) {
+        this.aiCompanion.showMessage({
+          message: "The digital patterns are beginning to self-organize...",
+          sentiment: "discovery",
+          intensity: 0.6
+        });
+        this.firstInsightShown = true;
+      }
+      
+      if (currentTime >= duration * 0.5 && !this.midpointInsightShown) {
+        this.aiCompanion.showMessage({
+          message: "Neural pathways are forming complex interconnections...",
+          sentiment: "revelation",
+          intensity: 0.8
+        });
+        this.midpointInsightShown = true;
+      }
+      
+      if (currentTime >= duration - 10 && !this.finalInsightShown) {
+        this.aiCompanion.showMessage({
+          message: "The digital consciousness has achieved a new state of being...",
+          sentiment: "wonder",
+          intensity: 1.0
+        });
+        this.finalInsightShown = true;
+      }
+    });
+  }
+
+  setupAudioTiming() {
     this.audioElement.addEventListener('timeupdate', () => {
       const currentTime = this.audioElement.currentTime;
       const duration = this.audioElement.duration;
